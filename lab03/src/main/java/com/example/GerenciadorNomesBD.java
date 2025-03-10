@@ -2,33 +2,60 @@
 //Millie Talala Zogheib - 10443653
 
 package com.example;
-import java.util.*;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GerenciadorNomesBD implements GerenciadorNomes {
-    try {
-        String pwd = "LAB03_programacaoII";
-        String url = "jdbc:postgresql://aws-0-sa-east-1.pooler.supabase.com:5432/postgres?user=postgres.iyaptczegscjtjaaevoj&password=" + pwd;
-  
-        Connection conn = DriverManager.getConnection(url);
+    private static final String URL = "jdbc:postgresql://db.bedgzwuehkovsemomtdf.supabase.co:5432/postgres";
+    private static final String USER = "postgres";
+    private static final String PASSWORD = "LAB03_progracaoII";
 
-        Scanner entrada = new Scanner(System.in);
-        System.out.print("Informe o numero da conta: ");
-        int nroConta = Integer.parseInt(entrada.nextLine());
-
-        String query = "select * from contas where nro_conta = ?";
-        PreparedStatement pstmt = conn.prepareStatement(query);
-        pstmt.setInt(1, nroConta);
-        ResultSet rs = pstmt.executeQuery();
-
-        while(rs.next()) {
-            System.out.print(rs.getInt("nro_conta"));
-            System.out.print(" - ");
-            System.out.println(rs.getDouble("saldo"));
+    public GerenciadorNomesBD() {
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement stmt = conn.createStatement()) {
+            String sql = "CREATE TABLE IF NOT EXISTS nomes (id SERIAL PRIMARY KEY, nome VARCHAR(" + MAX_CARACTERES_NOMES + "))";
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-
-    } catch(Exception ex) {
-        ex.printStackTrace();
     }
-      
+
+    @Override
+    public List<String> obterNomes() {
+        List<String> nomes = new ArrayList<>();
+        String sql = "SELECT nome FROM nomes";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                nomes.add(rs.getString("nome"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return nomes;
+    }
+
+    @Override
+    public void adicionarNome(String nome) {
+        if (nome.length() > MAX_CARACTERES_NOMES) {
+            System.out.println("Erro: Nome excede o limite de " + MAX_CARACTERES_NOMES + " caracteres.");
+            return;
+        }
+        String sql = "INSERT INTO nomes (nome) VALUES (?)";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, nome);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
+
